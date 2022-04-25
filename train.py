@@ -5,7 +5,9 @@ from torchvision import datasets, transforms
 import torch
 from torch import optim, utils
 from model.VAE import VAE
-from trainer.trainer import train, val
+from trainer.trainer import train, test
+from data.MNIST.get_dataset import transform, get_dataset
+from data.get_dataloader import get_dataloader
 
 
 def main():
@@ -16,49 +18,44 @@ def main():
         workspace="nayuta-ai",
     )
     hyper_params = {
+        "input_vertical_size": 28,
+        "input_side_size": 28,
         "hidden_dim": 10,
         "batch_size": 1000,
-        "num_epochs": 20,
-        "learning_rate": 0.01
+        "num_epochs": 1000,
+        "learning_rate": 0.001
     }
     experiment.log_parameters(hyper_params)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # data
-    transform = transforms.Compose([
-        transforms.ToTensor(), 
-        transforms.Lambda(lambda x: x.view(-1))])
+    trans = transform()
+    dataset_train, dataset_val, dataset_test = get_dataset(transform=trans, val_size=0.1)
 
-    dataset_train = datasets.MNIST(
-        '~/data/mnist', 
-        train=True, 
-        download=True, 
-        transform=transform)
-    dataset_valid = datasets.MNIST(
-        '~/data/mnist', 
-        train=False, 
-        download=True, 
-        transform=transform)
-
-    dataloader_train = utils.data.DataLoader(dataset_train,
-                                            batch_size=hyper_params["batch_size"],
-                                            shuffle=True,
-                                            num_workers=4)
-    dataloader_valid = utils.data.DataLoader(dataset_valid,
-                                            batch_size=hyper_params["batch_size"],
-                                            shuffle=True,
-                                            num_workers=4)
+    dataloader_train = get_dataloader(
+        dataset_train, batch_size=hyper_params["batch_size"], type_dataset="train")
+    dataloader_val = get_dataloader(
+        dataset_val, batch_size=hyper_params["batch_size"], type_dataset="val")
+    dataloader_test = get_dataloader(
+        dataset_test, batch_size=hyper_params["batch_size"], type_dataset="test")
     
     # model
-    model = VAE(z_dim=hyper_params["hidden_dim"], device=device).to(device)
+    model = VAE(
+        vertical=hyper_params["input_vertical_size"], side=hyper_params["input_side_size"],
+        z_dim=hyper_params["hidden_dim"], device=device).to(device)
+    
+    # optimizer
     optimizer = optim.Adam(model.parameters(), lr=hyper_params["learning_rate"])
     
     train(
-        model=model, dataloader=dataloader_train, optimizer=optimizer, 
-        device=device, iteration=hyper_params["num_epochs"], experiment=experiment)
+        model=model, dataloader_train=dataloader_train, dataloader_val=dataloader_val, 
+        optimizer=optimizer, device=device, iteration=hyper_params["num_epochs"], 
+        experiment=experiment)
     
-    val(model=model, dataloader=dataloader_valid, device=device, experiment=experiment)
+    test(
+        model=model, vertical=hyper_params["input_vertical_size"], side=hyper_params["input_side_size"], 
+        dataloader=dataloader_test, device=device, experiment=experiment)
 
 
 if __name__ == "__main__":

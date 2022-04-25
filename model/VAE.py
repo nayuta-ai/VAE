@@ -4,15 +4,15 @@ import torch.nn.functional as F
 
 
 class VAE(nn.Module):
-    def __init__(self, z_dim, device):
+    def __init__(self, device, vertical=28, side=28, enc1=200, enc2=200, z_dim=10, dec1=200, dec2=200):
       super(VAE, self).__init__()
-      self.dense_enc1 = nn.Linear(28*28, 200)
-      self.dense_enc2 = nn.Linear(200, 200)
-      self.dense_encmean = nn.Linear(200, z_dim)
-      self.dense_encvar = nn.Linear(200, z_dim)
-      self.dense_dec1 = nn.Linear(z_dim, 200)
-      self.dense_dec2 = nn.Linear(200, 200)
-      self.dense_dec3 = nn.Linear(200, 28*28)
+      self.dense_enc1 = nn.Linear(vertical*side, enc1)
+      self.dense_enc2 = nn.Linear(enc1, enc2)
+      self.dense_encmean = nn.Linear(enc2, z_dim)
+      self.dense_encvar = nn.Linear(enc2, z_dim)
+      self.dense_dec1 = nn.Linear(z_dim, dec1)
+      self.dense_dec2 = nn.Linear(dec1, dec2)
+      self.dense_dec3 = nn.Linear(dec2, vertical*side)
       self.device = device
     
     def _encoder(self, x):

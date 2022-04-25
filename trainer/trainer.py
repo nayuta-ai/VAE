@@ -1,51 +1,61 @@
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+from trainer.visualization.tsne import visualize_z
 
 
-def train(model, dataloader, optimizer, device, iteration, experiment):
+def train(model, dataloader_train, dataloader_val, optimizer, device, iteration, experiment):
     with experiment.train():
-        model.train()
         for i in range(iteration):
-            losses = []
-            for x, t in dataloader:
+            train_losses = []
+            model.train()
+            for x, t in dataloader_train:
                 x = x.to(device)
                 model.zero_grad()
                 y = model(x)
                 loss = model.loss(x)
                 loss.backward()
                 optimizer.step()
-                losses.append(loss.cpu().detach().numpy())
-            print("EPOCH: {} loss: {}".format(i, np.average(losses)))
-            experiment.log_metric("accuracy", np.average(losses), step=iteration)
+                train_losses.append(loss.cpu().detach().numpy())
+            print("EPOCH: {} train loss: {}".format(i, np.average(train_losses)))
+            experiment.log_metric("train_loss", np.average(train_losses), step=i)
+            val_losses = []
+            model.eval()
+            for x, t in dataloader_val:
+                x = x.to(device)
+                loss = model.loss(x)
+                val_losses.append(loss.cpu().detach().numpy())
+            print("EPOCH: {} val_loss: {}".format(i, np.average(val_losses)))
+            experiment.log_metric("val_loss", np.average(val_losses), step=i)
 
 
-def val(model, dataloader, device, experiment):
+def test(model, dataloader, vertical, side, device, experiment):
     fig = plt.figure(figsize=(10, 3))
     with experiment.test():
-        model.eval()
-        zs = []
+        # zs = []
         for x, t in dataloader:
             # original
-            for i, im in enumerate(x.view(-1, 28, 28).detach().numpy()[:10]):
+            for i, im in enumerate(x.view(-1, vertical, side).detach().numpy()[:10]):
                 ax = fig.add_subplot(3, 10, i+1, xticks=[], yticks=[])
                 ax.imshow(im, 'gray')
                 experiment.log_image(image_data=im, name="original", step=i)
             x = x.to(device)
             # generate from x
             y, z = model(x)
-            zs.append(z)
-            y = y.view(-1, 28, 28)
+            # zs.append(z)
+            y = y.view(-1, vertical, side)
             for i, im in enumerate(y.cpu().detach().numpy()[:10]):
                 ax = fig.add_subplot(3, 10, i+11, xticks=[], yticks=[])
                 ax.imshow(im, 'gray')
                 experiment.log_image(image_data=im, name="generate", step=i)
-            # generate from z
-            z1to0 = torch.cat([z[1] * (i * 0.1) + z[0] * ((9 - i) * 0.1) for i in range(10)])
-            z1to0 = torch.reshape(z1to0, (10, 10))
-            y2 = model._decoder(z1to0).view(-1, 28, 28)
-            for i, im in enumerate(y2.cpu().detach().numpy()):
-                ax = fig.add_subplot(3, 10, i+21, xticks=[], yticks=[])
-                ax.imshow(im, 'gray')
-                experiment.log_image(image_data=im, name="generated_by_z", step=i)
+            experiment.log_figure(figure_name="visualization", figure=fig)
+            visualize_z(experiment, z.cpu().detach().numpy(), t.cpu().detach().numpy())
             break
+        
+        test_losses = []
+        for x, t in dataloader:
+            x = x.to(device)
+            loss = model.loss(x)
+            test_losses.append(loss.cpu().detach().numpy())
+        print("Test loss: {}".format(np.average(test_losses)))
+        experiment.log_metric("test_loss", np.average(test_losses))

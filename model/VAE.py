@@ -43,6 +43,6 @@ class VAE(nn.Module):
       KL = -0.5 * torch.mean(torch.sum(1 + torch.log(var) - mean**2 - var))
       z = self._sample_z(mean, var)
       y = self._decoder(z)
-      reconstruction = torch.mean(torch.sum(x * torch.log(y) + (1 - x) * torch.log(1 - y)))
+      reconstruction = torch.mean(torch.sum(x * torch.log(y + 1e-8) + (1 - x) * torch.log(1 - y + 1e-8)))
       lower_bound = [-KL, reconstruction]                                      
       return -sum(lower_bound)

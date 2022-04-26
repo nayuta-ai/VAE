@@ -22,8 +22,8 @@ def main():
         "input_side_size": 28,
         "hidden_dim": 10,
         "batch_size": 1000,
-        "num_epochs": 1000,
-        "learning_rate": 0.001
+        "num_epochs": 500,
+        "learning_rate": 0.0001
     }
     experiment.log_parameters(hyper_params)
 
@@ -31,14 +31,12 @@ def main():
 
     # data
     trans = transform()
-    dataset_train, dataset_val, dataset_test = get_dataset(transform=trans, val_size=0.1)
+    dataset_train, dataset_val = get_dataset(transform=trans, val_size=0.1)
 
     dataloader_train = get_dataloader(
         dataset_train, batch_size=hyper_params["batch_size"], type_dataset="train")
     dataloader_val = get_dataloader(
         dataset_val, batch_size=hyper_params["batch_size"], type_dataset="val")
-    dataloader_test = get_dataloader(
-        dataset_test, batch_size=hyper_params["batch_size"], type_dataset="test")
     
     # model
     model = VAE(
@@ -55,7 +53,7 @@ def main():
     
     test(
         model=model, vertical=hyper_params["input_vertical_size"], side=hyper_params["input_side_size"], 
-        dataloader=dataloader_test, device=device, experiment=experiment)
+        dataloader=dataloader_val, device=device, experiment=experiment)
 
 
 if __name__ == "__main__":

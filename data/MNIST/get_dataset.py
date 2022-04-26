@@ -1,5 +1,4 @@
 from torchvision import datasets, transforms
-from sklearn.model_selection import train_test_split
 
 
 def transform():
@@ -8,10 +7,9 @@ def transform():
 
 
 def get_dataset(transform, val_size):
-    dataset = datasets.MNIST(
-        '~/data/mnist', train=True, download=True, transform=transform)
-    dataset_train, dataset_val = train_test_split(dataset, test_size=val_size)
-    dataset_test = datasets.MNIST(
-        '~/data/mnist', train=False, download=True, transform=transform)
+    dataset_train = datasets.MNIST(
+        '~/data/MNIST', train=True, download=True, transform=transform)
+    dataset_val = datasets.MNIST(
+        '~/data/MNIST', train=False, download=True, transform=transform)
     
-    return dataset_train, dataset_val, dataset_test
+    return dataset_train, dataset_val

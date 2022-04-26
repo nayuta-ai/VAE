@@ -1,13 +1,9 @@
-import hydra
-from omegaconf import DictConfig
 from comet_ml import Experiment
-from torchvision import datasets, transforms
 import torch
 from torch import optim, utils
 from model.VAE import VAE
 from trainer.trainer import train, test
-from data.MNIST.get_dataset import transform, get_dataset
-from data.get_dataloader import get_dataloader
+from data.rubber.get_dataloader import get_dataloader
 
 
 def main():
@@ -18,25 +14,22 @@ def main():
         workspace="nayuta-ai",
     )
     hyper_params = {
-        "input_vertical_size": 28,
-        "input_side_size": 28,
+        "input_vertical_size": 224,
+        "input_side_size": 224,
         "hidden_dim": 10,
-        "batch_size": 1000,
-        "num_epochs": 500,
-        "learning_rate": 0.0001
+        "batch_size": 16,
+        "num_epochs": 100,
+        "learning_rate": 0.001
     }
     experiment.log_parameters(hyper_params)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # data
-    trans = transform()
-    dataset_train, dataset_val = get_dataset(transform=trans, val_size=0.1)
-
     dataloader_train = get_dataloader(
-        dataset_train, batch_size=hyper_params["batch_size"], type_dataset="train")
+        batch_size=hyper_params["batch_size"], type_dataset="train")
     dataloader_val = get_dataloader(
-        dataset_val, batch_size=hyper_params["batch_size"], type_dataset="val")
+        batch_size=hyper_params["batch_size"], type_dataset="val")
     
     # model
     model = VAE(

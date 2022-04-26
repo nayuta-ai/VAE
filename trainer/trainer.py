@@ -9,7 +9,8 @@ def train(model, dataloader_train, dataloader_val, optimizer, device, iteration,
         for i in range(iteration):
             train_losses = []
             model.train()
-            for x, t in dataloader_train:
+            for _, x, t in dataloader_train:
+                x = torch.reshape(x, (-1, 224*224))
                 x = x.to(device)
                 model.zero_grad()
                 y = model(x)
@@ -21,7 +22,8 @@ def train(model, dataloader_train, dataloader_val, optimizer, device, iteration,
             experiment.log_metric("train_loss", np.average(train_losses), step=i)
             val_losses = []
             model.eval()
-            for x, t in dataloader_val:
+            for _, x, t in dataloader_val:
+                x = torch.reshape(x, (-1, 224*224))
                 x = x.to(device)
                 loss = model.loss(x)
                 val_losses.append(loss.cpu().detach().numpy())
@@ -33,12 +35,13 @@ def test(model, dataloader, vertical, side, device, experiment):
     fig = plt.figure(figsize=(10, 3))
     with experiment.test():
         # zs = []
-        for x, t in dataloader:
+        for _, x, t in dataloader:
             # original
             for i, im in enumerate(x.view(-1, vertical, side).detach().numpy()[:10]):
                 ax = fig.add_subplot(3, 10, i+1, xticks=[], yticks=[])
                 ax.imshow(im, 'gray')
                 experiment.log_image(image_data=im, name="original", step=i)
+            x = torch.reshape(x, (-1, 224*224))
             x = x.to(device)
             # generate from x
             y, z = model(x)
@@ -51,11 +54,3 @@ def test(model, dataloader, vertical, side, device, experiment):
             experiment.log_figure(figure_name="visualization", figure=fig)
             visualize_z(experiment, z.cpu().detach().numpy(), t.cpu().detach().numpy())
             break
-        
-        test_losses = []
-        for x, t in dataloader:
-            x = x.to(device)
-            loss = model.loss(x)
-            test_losses.append(loss.cpu().detach().numpy())
-        print("Test loss: {}".format(np.average(test_losses)))
-        experiment.log_metric("test_loss", np.average(test_losses))

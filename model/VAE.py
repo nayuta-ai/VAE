@@ -4,45 +4,86 @@ import torch.nn.functional as F
 
 
 class VAE(nn.Module):
-    def __init__(self, device, vertical=28, side=28, enc1=200, enc2=200, z_dim=10, dec1=200, dec2=200):
+    def __init__(self, device, beta: int = 1, in_channels: int = 1, z_dim: int = 10):
       super(VAE, self).__init__()
-      self.dense_enc1 = nn.Linear(vertical*side, enc1)
-      self.dense_enc2 = nn.Linear(enc1, enc2)
-      self.dense_encmean = nn.Linear(enc2, z_dim)
-      self.dense_encvar = nn.Linear(enc2, z_dim)
-      self.dense_dec1 = nn.Linear(z_dim, dec1)
-      self.dense_dec2 = nn.Linear(dec1, dec2)
-      self.dense_dec3 = nn.Linear(dec2, vertical*side)
       self.device = device
+      self.beta = beta
+      # encoder
+      modules = []
+      hidden_dims = [32, 64, 128, 256, 512]
+      for h_dim in hidden_dims:
+            modules.append(
+              nn.Sequential(
+                nn.Conv2d(
+                  in_channels, out_channels=h_dim,
+                  kernel_size=3, stride=2, padding=1),
+                nn.BatchNorm2d(h_dim),
+                nn.LeakyReLU(),
+              )
+            )
+            in_channels = h_dim
+      self.encoder = nn.Sequential(*modules)
+      self.dense_encmean = nn.Linear(hidden_dims[-1]*49, z_dim)
+      self.dense_encvar = nn.Linear(hidden_dims[-1]*49, z_dim)
+      # decoder
+      modules = []
+      self.decoder_input = nn.Linear(z_dim, hidden_dims[-1]*49)
+      hidden_dims.reverse()
+      for i in range(len(hidden_dims) - 1):
+            modules.append(
+              nn.Sequential(
+                nn.ConvTranspose2d(
+                  hidden_dims[i], hidden_dims[i+1], kernel_size=3,
+                  stride=2, padding=1, output_padding=1
+                ),
+                nn.BatchNorm2d(hidden_dims[i+1]),
+                nn.LeakyReLU(),
+              )
+            )
+      self.decoder = nn.Sequential(*modules)
+
+      self.final_layer = nn.Sequential(
+        nn.ConvTranspose2d(
+          hidden_dims[-1], hidden_dims[-1], kernel_size=3,
+          stride=2, padding=1, output_padding=1
+        ),
+        nn.BatchNorm2d(hidden_dims[-1]),
+        nn.LeakyReLU(),
+        nn.Conv2d(
+          hidden_dims[-1], out_channels=3, kernel_size=3, padding=1),
+        nn.Tanh(),
+      )
     
     def _encoder(self, x):
-      x = F.relu(self.dense_enc1(x))
-      x = F.relu(self.dense_enc2(x))
-      mean = self.dense_encmean(x)
-      var = F.softplus(self.dense_encvar(x))
-      return mean, var
+      result = self.encoder(x)
+      result = torch.flatten(result, start_dim=1)
+      mu = self.dense_encmean(result)
+      var = F.softplus(self.dense_encvar(result))
+      return mu, var
     
-    def _sample_z(self, mean, var):
-      epsilon = torch.randn(mean.shape).to(self.device)
-      return mean + torch.sqrt(var) * epsilon
+    def _sample_z(self, mu, log_var):
+      epsilon = torch.randn(mu.shape).to(self.device)
+      std = torch.exp(0.5 * log_var)
+      return mu + std*epsilon
  
     def _decoder(self, z):
-      x = F.relu(self.dense_dec1(z))
-      x = F.relu(self.dense_dec2(x))
-      x = F.sigmoid(self.dense_dec3(x))
-      return x
+      result = self.decoder_input(z)
+      result = result.view(-1, 512, 7, 7)
+      result = self.decoder(result)
+      result = self.final_layer(result)
+      return result
 
     def forward(self, x):
-      mean, var = self._encoder(x)
-      z = self._sample_z(mean, var)
+      mu, log_var = self._encoder(x)
+      z = self._sample_z(mu, log_var)
       x = self._decoder(z)
       return x, z
     
     def loss(self, x):
-      mean, var = self._encoder(x)
-      KL = -0.5 * torch.mean(torch.sum(1 + torch.log(var) - mean**2 - var))
-      z = self._sample_z(mean, var)
+      mu, log_var = self._encoder(x)
+      KL = -0.5 * torch.mean(torch.sum(1 + log_var - mu**2 - torch.exp(log_var)))
+      z = self._sample_z(mu, log_var)
       y = self._decoder(z)
-      reconstruction = torch.mean(torch.sum(x * torch.log(y + 1e-8) + (1 - x) * torch.log(1 - y + 1e-8)))
-      lower_bound = [-KL, reconstruction]                                      
+      recons_loss = F.mse_loss(y, x)
+      lower_bound = [-KL, recons_loss]
       return -sum(lower_bound)

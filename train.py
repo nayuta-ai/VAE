@@ -18,7 +18,7 @@ def main():
         "input_side_size": 224,
         "hidden_dim": 10,
         "batch_size": 16,
-        "num_epochs": 100,
+        "num_epochs": 1,
         "learning_rate": 0.001
     }
     experiment.log_parameters(hyper_params)
@@ -33,7 +33,6 @@ def main():
     
     # model
     model = VAE(
-        vertical=hyper_params["input_vertical_size"], side=hyper_params["input_side_size"],
         z_dim=hyper_params["hidden_dim"], device=device).to(device)
     
     # optimizer

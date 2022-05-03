@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -10,7 +11,6 @@ def train(model, dataloader_train, dataloader_val, optimizer, device, iteration,
             train_losses = []
             model.train()
             for _, x, t in dataloader_train:
-                x = torch.reshape(x, (-1, 224*224))
                 x = x.to(device)
                 model.zero_grad()
                 y = model(x)
@@ -23,7 +23,6 @@ def train(model, dataloader_train, dataloader_val, optimizer, device, iteration,
             val_losses = []
             model.eval()
             for _, x, t in dataloader_val:
-                x = torch.reshape(x, (-1, 224*224))
                 x = x.to(device)
                 loss = model.loss(x)
                 val_losses.append(loss.cpu().detach().numpy())
@@ -41,7 +40,6 @@ def test(model, dataloader, vertical, side, device, experiment):
                 ax = fig.add_subplot(3, 10, i+1, xticks=[], yticks=[])
                 ax.imshow(im, 'gray')
                 experiment.log_image(image_data=im, name="original", step=i)
-            x = torch.reshape(x, (-1, 224*224))
             x = x.to(device)
             # generate from x
             y, z = model(x)
@@ -53,4 +51,5 @@ def test(model, dataloader, vertical, side, device, experiment):
                 experiment.log_image(image_data=im, name="generate", step=i)
             experiment.log_figure(figure_name="visualization", figure=fig)
             visualize_z(experiment, z.cpu().detach().numpy(), t.cpu().detach().numpy())
+            torch.save(model.state_dict(),"model/model.pth")
             break

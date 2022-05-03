@@ -81,9 +81,9 @@ class VAE(nn.Module):
     
     def loss(self, x):
       mu, log_var = self._encoder(x)
-      KL = -0.5 * torch.mean(torch.sum(1 + log_var - mu**2 - torch.exp(log_var)))
+      KL = torch.mean(-0.5 * torch.sum(1 + log_var - mu**2 - torch.exp(log_var), dim = 1), dim = 0)
       z = self._sample_z(mu, log_var)
       y = self._decoder(z)
       recons_loss = F.mse_loss(y, x)
-      lower_bound = [-KL, recons_loss]
-      return -sum(lower_bound)
+      loss = recons_loss + self.beta * KL
+      return loss

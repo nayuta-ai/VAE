@@ -18,7 +18,7 @@ def main():
         "input_side_size": 224,
         "hidden_dim": 10,
         "batch_size": 16,
-        "num_epochs": 1,
+        "num_epochs": 1000,
         "learning_rate": 0.001
     }
     experiment.log_parameters(hyper_params)

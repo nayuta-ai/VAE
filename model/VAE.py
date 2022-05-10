@@ -50,8 +50,8 @@ class VAE(nn.Module):
         nn.BatchNorm2d(hidden_dims[-1]),
         nn.LeakyReLU(),
         nn.Conv2d(
-          hidden_dims[-1], out_channels=3, kernel_size=3, padding=1),
-        nn.Tanh(),
+          hidden_dims[-1], out_channels=1, kernel_size=3, padding=1),
+        nn.Sigmoid(),
       )
     
     def _encoder(self, x):
@@ -81,9 +81,9 @@ class VAE(nn.Module):
     
     def loss(self, x):
       mu, log_var = self._encoder(x)
-      KL = torch.mean(-0.5 * torch.sum(1 + log_var - mu**2 - torch.exp(log_var), dim = 1), dim = 0)
+      KL = -0.5 * torch.sum(1 + log_var - mu**2 - torch.exp(log_var))
       z = self._sample_z(mu, log_var)
       y = self._decoder(z)
-      recons_loss = F.mse_loss(y, x)
-      loss = recons_loss + self.beta * KL
+      reconstruction = torch.sum(x * torch.log(y + 1e-8) + (1 - x) * torch.log(1 - y + 1e-8))
+      loss = - (reconstruction + self.beta * -KL)
       return loss

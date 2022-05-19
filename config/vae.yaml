@@ -1,0 +1,11 @@
+Model:
+  # model parameter
+  name: "vae"
+  distribution: "Bern"
+  hidden_dims: []
+  latent_dim: 3
+  input_channel: 784
+  # train parameter
+  batch_size: 1000
+  num_epochs: 1
+  learning_rate: 0.0001

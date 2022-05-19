@@ -1,10 +1,18 @@
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-from trainer.visualization.tsne import visualize_z
+from visualization.tsne import visualize_z
 
 
-def train(model, dataloader_train, dataloader_val, optimizer, device, iteration, experiment):
+def train(
+    model,
+    dataloader_train,
+    dataloader_val,
+    optimizer,
+    device,
+    iteration,
+    experiment,
+):
     with experiment.train():
         for i in range(iteration):
             train_losses = []
@@ -18,6 +26,7 @@ def train(model, dataloader_train, dataloader_val, optimizer, device, iteration,
                 optimizer.step()
                 train_losses.append(loss.cpu().detach().numpy())
             print("EPOCH: {} train loss: {}".format(i, np.average(train_losses)))
+            torch.save(model.state_dict(), "result/model.pth")
             experiment.log_metric("train_loss", np.average(train_losses), step=i)
             val_losses = []
             model.eval()
@@ -29,13 +38,13 @@ def train(model, dataloader_train, dataloader_val, optimizer, device, iteration,
             experiment.log_metric("val_loss", np.average(val_losses), step=i)
 
 
-def test(model, dataloader, vertical, side, device, experiment):
+def test(model, dataloader, device, experiment):
     fig = plt.figure(figsize=(10, 3))
     with experiment.test():
         # zs = []
         for x, t in dataloader:
             # original
-            for i, im in enumerate(x.view(-1, vertical, side).detach().numpy()[:10]):
+            for i, im in enumerate(x.view(-1, 28, 28).detach().numpy()[:10]):
                 ax = fig.add_subplot(3, 10, i+1, xticks=[], yticks=[])
                 ax.imshow(im, 'gray')
                 experiment.log_image(image_data=im, name="original", step=i)
@@ -43,7 +52,7 @@ def test(model, dataloader, vertical, side, device, experiment):
             # generate from x
             y, z = model(x)
             # zs.append(z)
-            y = y.view(-1, vertical, side)
+            y = y.view(-1, 28, 28)
             for i, im in enumerate(y.cpu().detach().numpy()[:10]):
                 ax = fig.add_subplot(3, 10, i+11, xticks=[], yticks=[])
                 ax.imshow(im, 'gray')
@@ -52,10 +61,3 @@ def test(model, dataloader, vertical, side, device, experiment):
             visualize_z(experiment, z.cpu().detach().numpy(), t.cpu().detach().numpy())
             break
         
-        test_losses = []
-        for x, t in dataloader:
-            x = x.to(device)
-            loss = model.loss(x)
-            test_losses.append(loss.cpu().detach().numpy())
-        print("Test loss: {}".format(np.average(test_losses)))
-        experiment.log_metric("test_loss", np.average(test_losses))

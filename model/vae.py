@@ -1,7 +1,8 @@
+from typing import List
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import List
 
 
 class VAE(nn.Module):
@@ -11,7 +12,7 @@ class VAE(nn.Module):
         input_channel: int = 784,
         hidden_dims: List[int] = None,
         latent_dim: int = 10,
-        distribution: str = "Gauss"
+        distribution: str = "Gauss",
     ):
         super().__init__()
         self.distribution = distribution
@@ -27,14 +28,14 @@ class VAE(nn.Module):
                 device=device,
                 output_channel=input_channel,
                 hidden_dims=hidden_dims,
-                latent_dim=latent_dim
+                latent_dim=latent_dim,
             )
         else:
             self.decoder = GaussDecoder(
                 device=device,
                 output_channel=input_channel,
                 hidden_dims=hidden_dims,
-                latent_dim=latent_dim
+                latent_dim=latent_dim,
             )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -47,8 +48,7 @@ class VAE(nn.Module):
             y = self.reparametrize(mu, sig)
         return y, z
 
-    def reparametrize(
-        self, mu: torch.Tensor, sig: torch.Tensor) -> torch.Tensor:
+    def reparametrize(self, mu: torch.Tensor, sig: torch.Tensor) -> torch.Tensor:
         z = mu + torch.sqrt(sig) * torch.randn(mu.shape).to(self.device)
         return z
 
@@ -57,13 +57,17 @@ class VAE(nn.Module):
         z = self.reparametrize(mu, sig)
         if self.distribution == "Bern":
             y = self.decoder(z)
-            L1 = - torch.mean(torch.sum(x*torch.log(y+1e-08) + (1-x)*torch.log(1-y+1e-08), dim=1))
+            L1 = -torch.mean(
+                torch.sum(
+                    x * torch.log(y + 1e-08) + (1 - x) * torch.log(1 - y + 1e-08), dim=1
+                )
+            )
         else:
             dec_mu, dec_sig = self.decoder(z)
             y = self.reparametrize(dec_mu, dec_sig)
             criterion = nn.MSELoss()
-            L1 =  criterion(y, x) * 0.5
-        L2 = - 0.5*torch.mean(torch.sum(1 + torch.log(sig) - mu**2 - sig, dim=1))
+            L1 = criterion(y, x) * 0.5
+        L2 = -0.5 * torch.mean(torch.sum(1 + torch.log(sig) - mu**2 - sig, dim=1))
         L = L1 + L2
         return L
 
@@ -83,10 +87,7 @@ class Encoder(nn.Module):
         modules = []
         for h_dim in hidden_dims:
             modules.append(
-                nn.Sequential(
-                    nn.Linear(input_channel, h_dim),
-                    nn.LeakyReLU()
-                )
+                nn.Sequential(nn.Linear(input_channel, h_dim), nn.LeakyReLU())
             )
             input_channel = h_dim
         self.encoder = nn.Sequential(*modules)
@@ -119,18 +120,10 @@ class Decoder(nn.Module):
         modules = []
         input_dim = latent_dim
         for h_dim in hidden_dims:
-            modules.append(
-                nn.Sequential(
-                    nn.Linear(input_dim, h_dim),
-                    nn.LeakyReLU()
-                )
-            )
+            modules.append(nn.Sequential(nn.Linear(input_dim, h_dim), nn.LeakyReLU()))
             input_dim = h_dim
         self.decoder = nn.Sequential(*modules)
-        self.fc_last = nn.Sequential(
-            nn.Linear(input_dim, output_channel),
-            nn.Sigmoid()
-        )
+        self.fc_last = nn.Sequential(nn.Linear(input_dim, output_channel), nn.Sigmoid())
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
         res = self.decoder(z)
@@ -155,12 +148,7 @@ class GaussDecoder(nn.Module):
         modules = []
         input_dim = latent_dim
         for h_dim in hidden_dims:
-            modules.append(
-                nn.Sequential(
-                    nn.Linear(input_dim, h_dim),
-                    nn.LeakyReLU()
-                )
-            )
+            modules.append(nn.Sequential(nn.Linear(input_dim, h_dim), nn.LeakyReLU()))
             input_dim = h_dim
         self.decoder = nn.Sequential(*modules)
         self.fc_mean = nn.Linear(input_dim, output_channel)

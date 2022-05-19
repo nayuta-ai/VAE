@@ -1,6 +1,7 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
+
 from visualization.tsne import visualize_z
 
 
@@ -20,7 +21,6 @@ def train(
             for x, t in dataloader_train:
                 x = x.to(device)
                 model.zero_grad()
-                y = model(x)
                 loss = model.loss(x)
                 loss.backward()
                 optimizer.step()
@@ -45,8 +45,8 @@ def test(model, dataloader, device, experiment):
         for x, t in dataloader:
             # original
             for i, im in enumerate(x.view(-1, 28, 28).detach().numpy()[:10]):
-                ax = fig.add_subplot(3, 10, i+1, xticks=[], yticks=[])
-                ax.imshow(im, 'gray')
+                ax = fig.add_subplot(3, 10, i + 1, xticks=[], yticks=[])
+                ax.imshow(im, "gray")
                 experiment.log_image(image_data=im, name="original", step=i)
             x = x.to(device)
             # generate from x
@@ -54,10 +54,9 @@ def test(model, dataloader, device, experiment):
             # zs.append(z)
             y = y.view(-1, 28, 28)
             for i, im in enumerate(y.cpu().detach().numpy()[:10]):
-                ax = fig.add_subplot(3, 10, i+11, xticks=[], yticks=[])
-                ax.imshow(im, 'gray')
+                ax = fig.add_subplot(3, 10, i + 11, xticks=[], yticks=[])
+                ax.imshow(im, "gray")
                 experiment.log_image(image_data=im, name="generate", step=i)
             experiment.log_figure(figure_name="visualization", figure=fig)
             visualize_z(experiment, z.cpu().detach().numpy(), t.cpu().detach().numpy())
             break
-        

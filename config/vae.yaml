@@ -1,11 +1,12 @@
 Model:
   # model parameter
   name: "vae"
-  distribution: "Bern"
+  dataset: "mnist"
+  distribution: "Gauss"
   hidden_dims: []
-  latent_dim: 3
+  latent_dim: 2
   input_channel: 784
   # train parameter
-  batch_size: 1000
-  num_epochs: 1
+  batch_size: 100
+  num_epochs: 100
   learning_rate: 0.0001

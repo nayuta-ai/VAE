@@ -7,12 +7,12 @@ def transform():
     )
 
 
-def get_dataset(transform, val_size):
-    dataset_train = datasets.MNIST(
-        "~/data/MNIST", train=True, download=True, transform=transform
-    )
-    dataset_val = datasets.MNIST(
-        "~/data/MNIST", train=False, download=True, transform=transform
-    )
-
-    return dataset_train, dataset_val
+def get_dataset(transform, type_dataset: str):
+    if type_dataset == "train":
+        return datasets.MNIST(
+            "~/data/MNIST", train=True, download=True, transform=transform
+        )
+    elif type_dataset == "val":
+        return datasets.MNIST(
+            "~/data/MNIST", train=False, download=True, transform=transform
+        )

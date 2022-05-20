@@ -46,7 +46,8 @@ def random_generate(model, distribution, latent_dim, device, experiment):
             if distribution == "Bern":
                 img = model.decoder(z)
             else:
-                img = model.reparametrize(model.decoder(z))
+                mu, sig = model.decoder(z)
+                img = model.reparametrize(mu, sig)
             img = img.view(-1, 28, 28)
             img = img.squeeze().detach().cpu().numpy()
             top = i * img_size_space

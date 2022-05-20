@@ -1,11 +1,10 @@
-import torch
 import yaml
 from comet_ml import Experiment
+import torch
 from torch import optim
 
 import setting
-from data.get_dataloader import get_dataloader
-from data.MNIST.get_dataset import get_dataset, transform
+from data import get_dataloader
 from model.vae import VAE
 from trainer import test, train
 from visualization.generate import generate, random_generate
@@ -25,14 +24,11 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # data
-    trans = transform()
-    dataset_train, dataset_val = get_dataset(transform=trans, val_size=0.1)
-
     dataloader_train = get_dataloader(
-        dataset_train, batch_size=config["batch_size"], type_dataset="train"
+        name=config["dataset"], batch_size=config["batch_size"], type_dataset="train"
     )
     dataloader_val = get_dataloader(
-        dataset_val, batch_size=config["batch_size"], type_dataset="val"
+        name=config["dataset"], batch_size=config["batch_size"], type_dataset="val"
     )
 
     # model

@@ -1,18 +1,21 @@
 import os
-from typing import List, Tuple
+import glob
+from typing import List
 
 import numpy as np
 import torch
 from torch.utils.data import Dataset
 
+from config.path import DATA_PATH
+
 
 class ImageDataset(Dataset):
-    def __init__(
-            self, dataset: Tuple) -> None:
+    def __init__(self) -> None:
         """ Initialization
         Args:
             dataset (Tuple): original dataset
         """
+        dataset = glob.glob(DATA_PATH)
         self.dataset = dataset
 
     def __len__(self) -> int:

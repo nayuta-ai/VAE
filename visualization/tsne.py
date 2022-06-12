@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 
 
-def visualize_z(experiment, z, labels):
+def visualize_z(experiment, z, labels, label_list):
     colors = [
         "red",
         "green",
@@ -24,6 +24,6 @@ def visualize_z(experiment, z, labels):
         if l not in color_dict:
             color_dict[l] = i
             i += 1
-        plt.scatter(p[0], p[1], marker="${}$".format(l), c=colors[color_dict[l]])
+        plt.scatter(p[0], p[1], marker="${}$".format(label_list[l]), c=colors[color_dict[l]])
     plt.show()
     experiment.log_figure(figure_name="visualize z", figure=plt)

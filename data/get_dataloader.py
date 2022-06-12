@@ -1,10 +1,11 @@
-from data.MNIST.get_dataloader import mnist_dataloader
-from data.rubber.get_dataloader import rubber_dataloader
+import torch
+from torch.utils.data import DataLoader
 
 
-def get_dataloader(name, batch_size, type_dataset):
-    if name == "mnist":
-        return mnist_dataloader(batch_size=batch_size, type_dataset=type_dataset)
-    
-    elif name == "rubber":
-        return rubber_dataloader(batch_size=batch_size, type_dataset=type_dataset)
+def get_dataloader(dataset, batch_size, type_dataset):
+    if type_dataset == "train":
+        return torch.utils.data.DataLoader(
+            dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    elif type_dataset == "val":
+        return torch.utils.data.DataLoader(
+            dataset, batch_size=batch_size, shuffle=False, num_workers=4)
